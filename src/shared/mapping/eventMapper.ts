@@ -1,5 +1,6 @@
 import {
   RlBallHit,
+  RlClockUpdatedSeconds,
   RlGoalScored,
   RlMatchEnded,
   RlMessage,
@@ -38,6 +39,8 @@ export function mapRlEventToSosMessages(message: RlMessage): SosMessage[] {
       return [mapUpdateState(data as RlUpdateState)];
     case "BallHit":
       return [mapBallHit(data as RlBallHit)];
+    case "ClockUpdatedSeconds":
+      return [mapClockUpdatedSeconds(data as RlClockUpdatedSeconds)];
     case "StatfeedEvent":
       return [mapStatfeedEvent(data as RlStatfeedEvent)];
     case "GoalScored":
@@ -202,6 +205,17 @@ function mapBallHit(data: RlBallHit): SosMessage {
           },
       match_guid: data.MatchGuid
     }
+  };
+}
+
+function mapClockUpdatedSeconds(data: RlClockUpdatedSeconds): SosMessage {
+  return {
+    event: "game:clock_updated_seconds",
+    data: {
+      match_guid: data.MatchGuid,
+      isOT: data.bOvertime,
+      time_seconds: data.TimeSeconds,
+    },
   };
 }
 

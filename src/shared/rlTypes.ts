@@ -85,6 +85,12 @@ export interface RlBallHit {
   };
 }
 
+export interface RlClockUpdatedSeconds {
+  MatchGuid: string;
+  TimeSeconds: number;
+  bOvertime: boolean;
+}
+
 export interface RlGoalScored {
   MatchGuid: string;
   GoalSpeed?: number;
