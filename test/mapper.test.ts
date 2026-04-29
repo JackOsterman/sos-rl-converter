@@ -152,6 +152,23 @@ function run(): void {
     data: { MatchGuid: matchGuid, BallSpeed: 870.3 }
   });
 
+  const [clockUpdatedSeconds] = mapRlEventToSosMessages({
+    Event: "ClockUpdatedSeconds",
+    Data: {
+      MatchGuid: matchGuid,
+      TimeSeconds: 135,
+      bOvertime: false
+    }
+  });
+  assert.deepStrictEqual(clockUpdatedSeconds, {
+    event: "game:clock_updated_seconds",
+    data: {
+      match_guid: matchGuid,
+      isOT: false,
+      time_seconds: 135
+    }
+  });
+
   const countdown = mapRlEventToSosMessages({
     Event: "CountdownBegin",
     Data: { MatchGuid: matchGuid }
