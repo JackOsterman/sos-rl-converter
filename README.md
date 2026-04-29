@@ -120,7 +120,6 @@ These are behaviors observed while testing against the live Rocket League Stats 
 
 - The API is raw TCP, not WebSocket, even though some documentation wording mentions WebSocket.
 - The outer message is JSON, but `Data` may itself be a JSON-encoded string. The converter parses this automatically.
-- `ClockUpdatedSeconds` is mapped to `game:clock_updated_seconds` with `match_guid`, `time_seconds`, and `isOT`.
 - `UpdateState.Game.Ball` may include speed/team but not ball location. When location is absent, the converter emits `{ "X": 0, "Y": 0, "Z": 0 }` for SOS compatibility.
 - `MatchCreated` may arrive with an empty `MatchGuid`; `MatchInitialized` later contains the real match guid.
 - Real replay events may be named `ReplayWillEnd` instead of `GoalReplayWillEnd`.
