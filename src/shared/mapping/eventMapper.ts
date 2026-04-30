@@ -35,6 +35,8 @@ export function mapRlEventToSosMessages(message: RlMessage): SosMessage[] {
         simple("game:pre_countdown_begin", data),
         simple("game:post_countdown_begin", data)
       ];
+    case "RoundStarted":
+      return [simple("game:round_started_go", data)];
     case "UpdateState":
       return [mapUpdateState(data as RlUpdateState)];
     case "BallHit":
@@ -97,54 +99,54 @@ function mapUpdateState(data: RlUpdateState): SosMessage {
       event: "gamestate",
       game: {
         arena: read(game, "Arena", "arena") || "",
-        time_milliseconds: read(game, "TimeSeconds", "time_seconds", "time") ?? 0,
-        time_seconds: read(game, "TimeSeconds", "time_seconds", "time") ?? 0,
-        teams: mapTeams(read(game, "Teams", "teams") || []),
         ball: {
           location: read(read(game, "Ball", "ball") || {}, "Location", "location") || { X: 0, Y: 0, Z: 0 },
           speed: read(read(game, "Ball", "ball") || {}, "Speed", "speed") ?? 0,
           team: read(read(game, "Ball", "ball") || {}, "TeamNum", "team", "team_num") ?? 0
         },
         hasTarget: Boolean(read(game, "bHasTarget", "hasTarget")),
-        target: makeOptionalSosPlayerId(read(game, "Target", "target")),
         hasWinner: Boolean(read(game, "bHasWinner", "hasWinner")),
-        winner: read(game, "Winner", "winner") || "",
         isOT: Boolean(read(game, "bOvertime", "isOT")),
-        isReplay: Boolean(read(game, "bReplay", "isReplay"))
+        isReplay: Boolean(read(game, "bReplay", "isReplay")),
+        target: makeOptionalSosPlayerId(read(game, "Target", "target")),
+        teams: mapTeams(read(game, "Teams", "teams") || []),
+        time_milliseconds: read(game, "TimeSeconds", "time_seconds", "time") ?? 0,
+        time_seconds: read(game, "TimeSeconds", "time_seconds", "time") ?? 0,
+        winner: read(game, "Winner", "winner") || ""
       },
-      players,
       hasGame: true,
-      match_guid: read(data, "MatchGuid", "match_guid")
+      match_guid: read(data, "MatchGuid", "match_guid"),
+      players
     }
   };
 }
 
 function mapPlayer(player: RlPlayer, id: string): unknown {
   return {
-    id,
-    primary_id: read(player, "PrimaryId", "primary_id") || "",
-    name: read(player, "Name", "name") || "",
-    team: read(player, "TeamNum", "team", "team_num") ?? 0,
-    boost: read(player, "Boost", "boost") ?? 0,
-    speed: read(player, "Speed", "speed") ?? 0,
-    isBoosting: Boolean(read(player, "bBoosting", "isBoosting")),
-    isPowersliding: Boolean(read(player, "bPowersliding", "isPowersliding")),
-    isSonic: Boolean(read(player, "bSupersonic", "isSonic")),
-    onGround: Boolean(read(player, "bOnGround", "onGround")),
-    onWall: Boolean(read(player, "bOnWall", "onWall")),
-    hasCar: read(player, "bHasCar", "hasCar") !== false,
-    shortcut: read(player, "Shortcut", "shortcut") ?? 0,
-    attacker: makeOptionalSosPlayerId(read(player, "Attacker", "attacker")),
-    isDead: Boolean(read(player, "bDemolished", "isDead")),
-    location: normalizeCarLocation(read(player, "Location", "location")),
-    score: read(player, "Score", "score") ?? 0,
     assists: read(player, "Assists", "assists") ?? 0,
+    attacker: makeOptionalSosPlayerId(read(player, "Attacker", "attacker")),
+    boost: read(player, "Boost", "boost") ?? 0,
+    cartouches: read(player, "CarTouches", "cartouches") ?? 0,
     demos: read(player, "Demos", "demos") ?? 0,
     goals: read(player, "Goals", "goals") ?? 0,
+    hasCar: read(player, "bHasCar", "hasCar") !== false,
+    id,
+    isBoosting: Boolean(read(player, "bBoosting", "isBoosting")),
+    isDead: Boolean(read(player, "bDemolished", "isDead")),
+    isPowersliding: Boolean(read(player, "bPowersliding", "isPowersliding")),
+    isSonic: Boolean(read(player, "bSupersonic", "isSonic")),
+    location: normalizeCarLocation(read(player, "Location", "location")),
+    name: read(player, "Name", "name") || "",
+    onGround: Boolean(read(player, "bOnGround", "onGround")),
+    onWall: Boolean(read(player, "bOnWall", "onWall")),
+    primaryID: read(player, "PrimaryId", "primaryID") || "",
     saves: read(player, "Saves", "saves") ?? 0,
+    score: read(player, "Score", "score") ?? 0,
+    shortcut: read(player, "Shortcut", "shortcut") ?? 0,
     shots: read(player, "Shots", "shots") ?? 0,
-    touches: read(player, "Touches", "touches") ?? 0,
-    cartouches: read(player, "CarTouches", "cartouches") ?? 0
+    speed: read(player, "Speed", "speed") ?? 0,
+    team: read(player, "TeamNum", "team", "team_num") ?? 0,
+    touches: read(player, "Touches", "touches") ?? 0
   };
 }
 
@@ -212,8 +214,8 @@ function mapClockUpdatedSeconds(data: RlClockUpdatedSeconds): SosMessage {
   return {
     event: "game:clock_updated_seconds",
     data: {
-      match_guid: data.MatchGuid,
       isOT: data.bOvertime,
+      match_guid: data.MatchGuid,
       time_seconds: data.TimeSeconds,
     },
   };
@@ -223,27 +225,27 @@ function mapGoalScored(data: RlGoalScored): SosMessage {
   return {
     event: "game:goal_scored",
     data: {
-      scorer: data.Scorer
-        ? {
-            id: makeSosPlayerId(data.Scorer),
-            name: data.Scorer.Name || "",
-            teamnum: data.Scorer.TeamNum ?? 0
-          }
-        : { id: "", name: "", teamnum: 0 },
       assister: data.Assister
         ? {
             id: makeSosPlayerId(data.Assister),
             name: data.Assister.Name || ""
           }
         : { id: "", name: "" },
-      goaltime: data.GoalTime ?? 0,
-      goalspeed: data.GoalSpeed ?? 0,
       ball_last_touch: {
         player: data.BallLastTouch?.Player ? makeSosPlayerId(data.BallLastTouch.Player) : "",
         speed: data.BallLastTouch?.Speed ?? 0
       },
+      goaltime: data.GoalTime ?? 0,
+      goalspeed: data.GoalSpeed ?? 0,
       impact_location: normalizeVector(data.ImpactLocation),
-      match_guid: data.MatchGuid
+      match_guid: data.MatchGuid,
+      scorer: data.Scorer
+        ? {
+            id: makeSosPlayerId(data.Scorer),
+            name: data.Scorer.Name || "",
+            teamnum: data.Scorer.TeamNum ?? 0
+          }
+        : { id: "", name: "", teamnum: 0 }
     }
   };
 }
@@ -253,10 +255,10 @@ function mapStatfeedEvent(data: RlStatfeedEvent): SosMessage {
     event: "game:statfeed_event",
     data: {
       event_name: data.EventName || "",
-      type: data.Type || "",
       main_target: mapTeamTarget(data.MainTarget),
+      match_guid: data.MatchGuid,
       secondary_target: mapTeamTarget(data.SecondaryTarget),
-      match_guid: data.MatchGuid
+      type: data.Type || ""
     }
   };
 }
