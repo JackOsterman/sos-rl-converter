@@ -57,8 +57,12 @@ export class Bridge {
 
     this.rlClient.on("error", (error) => this.log(`Rocket League API error: ${error.message}`));
 
+    //TODO: remove when replay event working
+    var prevReplayState: boolean = false;
+    
     this.rlClient.on("message", (message) => {
-      const outgoing = mapRlEventToSosMessages(message);
+      const [outgoing, replayState] = mapRlEventToSosMessages(message,prevReplayState);
+      prevReplayState = replayState;
       for (const sosMessage of outgoing) {
         this.wsServer.broadcast(sosMessage);
       }

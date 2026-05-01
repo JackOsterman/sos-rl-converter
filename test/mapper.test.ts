@@ -104,8 +104,11 @@ const statfeed: RlMessage = {
   }
 };
 
+const prevReplayState: boolean = false;
+
+//TODO: returned SOSMessages are nested arrays now due to bodge passing prevReplayState, Remove once Goal Replay Start/End events are working
 function run(): void {
-  const [mappedUpdate] = mapRlEventToSosMessages(updateState);
+  const [[mappedUpdate]] = mapRlEventToSosMessages(updateState, prevReplayState);
   assert.strictEqual(mappedUpdate.event, "game:update_state");
   assert.strictEqual((mappedUpdate.data as any).event, "gamestate");
   assert.strictEqual((mappedUpdate.data as any).players["Player 1_1"].primary_id, "1");
@@ -113,22 +116,22 @@ function run(): void {
   assert.strictEqual((mappedUpdate.data as any).game.teams[0].color_primary, "1873FF");
   assert.strictEqual((mappedUpdate.data as any).game.teams[1].score, 0);
 
-  const [mappedGoal] = mapRlEventToSosMessages(goalScored);
+  const [[mappedGoal]] = mapRlEventToSosMessages(goalScored, prevReplayState);
   assert.strictEqual(mappedGoal.event, "game:goal_scored");
   assert.strictEqual((mappedGoal.data as any).scorer.id, "Player 1_1");
   assert.strictEqual((mappedGoal.data as any).assister.id, "Player 3_3");
   assert.strictEqual((mappedGoal.data as any).ball_last_touch.player, "Player 1_1");
 
-  const [mappedBallHit] = mapRlEventToSosMessages(ballHit);
+  const [[mappedBallHit]] = mapRlEventToSosMessages(ballHit, prevReplayState);
   assert.strictEqual(mappedBallHit.event, "game:ball_hit");
   assert.strictEqual((mappedBallHit.data as any).player.id, "Player 1_1");
   assert.strictEqual((mappedBallHit.data as any).ball.post_hit_speed, 20);
 
-  const [mappedStatfeed] = mapRlEventToSosMessages(statfeed);
+  const [[mappedStatfeed]] = mapRlEventToSosMessages(statfeed, prevReplayState);
   assert.strictEqual(mappedStatfeed.event, "game:statfeed_event");
   assert.strictEqual((mappedStatfeed.data as any).main_target.id, "Player 1_1");
 
-  const [statfeedWithoutSecondary] = mapRlEventToSosMessages({
+  const [[statfeedWithoutSecondary]] = mapRlEventToSosMessages({
     Event: "StatfeedEvent",
     Data: {
       MatchGuid: matchGuid,
@@ -136,30 +139,30 @@ function run(): void {
       Type: "Goal",
       MainTarget: { Name: "Player 1", Shortcut: 1, TeamNum: 0 }
     }
-  });
+  }, prevReplayState);
   assert.deepStrictEqual((statfeedWithoutSecondary.data as any).secondary_target, {
     id: "",
     name: "",
     team_num: -1
   });
 
-  const [unknown] = mapRlEventToSosMessages({
+  const [[unknown]] = mapRlEventToSosMessages({
     Event: "CrossbarHit",
     Data: { MatchGuid: matchGuid, BallSpeed: 870.3 }
-  });
+  }, prevReplayState);
   assert.deepStrictEqual(unknown, {
     event: "CrossbarHit",
     data: { MatchGuid: matchGuid, BallSpeed: 870.3 }
   });
 
-  const [clockUpdatedSeconds] = mapRlEventToSosMessages({
+  const [[clockUpdatedSeconds]] = mapRlEventToSosMessages({
     Event: "ClockUpdatedSeconds",
     Data: {
       MatchGuid: matchGuid,
       TimeSeconds: 135,
       bOvertime: false
     }
-  });
+  }, prevReplayState);
   assert.deepStrictEqual(clockUpdatedSeconds, {
     event: "game:clock_updated_seconds",
     data: {
@@ -169,34 +172,34 @@ function run(): void {
     }
   });
 
-  const countdown = mapRlEventToSosMessages({
+  const [countdown] = mapRlEventToSosMessages({
     Event: "CountdownBegin",
     Data: { MatchGuid: matchGuid }
-  });
+  }, prevReplayState);
   assert.deepStrictEqual(
     countdown.map((message) => message.event),
     ["game:pre_countdown_begin", "game:post_countdown_begin"]
   );
 
-  const [stringDataUpdate] = mapRlEventToSosMessages({
+  const [[stringDataUpdate]] = mapRlEventToSosMessages({
     Event: "UpdateState",
     Data: JSON.stringify(updateState.Data)
-  });
+  }, prevReplayState);
   assert.strictEqual((stringDataUpdate.data as any).players["Player 1_1"].boost, 33);
 
-  const [realReplayWillEnd] = mapRlEventToSosMessages({
+  const [[realReplayWillEnd]] = mapRlEventToSosMessages({
     Event: "ReplayWillEnd",
     Data: { MatchGuid: matchGuid }
-  });
+  }, prevReplayState);
   assert.strictEqual(realReplayWillEnd.event, "game:replay_will_end");
 
-  const [emptyScorerGoal] = mapRlEventToSosMessages({
+  const [[emptyScorerGoal]] = mapRlEventToSosMessages({
     Event: "GoalScored",
     Data: {
       MatchGuid: matchGuid,
       Scorer: { Name: "", Shortcut: 0, TeamNum: 0 }
     }
-  });
+  }, prevReplayState);
   assert.strictEqual((emptyScorerGoal.data as any).scorer.id, "");
 }
 

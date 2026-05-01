@@ -22,48 +22,48 @@ const zeroLocation = {
   yaw: 0
 };
 
-export function mapRlEventToSosMessages(message: RlMessage): SosMessage[] {
+export function mapRlEventToSosMessages(message: RlMessage,prevReplayState: boolean): [SosMessage[],boolean] {
   const data = normalizeData(message.Data);
 
   switch (message.Event) {
     case "MatchCreated":
-      return [simple("game:match_created", data)];
+      return [[simple("game:match_created", data)],prevReplayState];
     case "MatchInitialized":
-      return [simple("game:initialized", data)];
+      return [[simple("game:initialized", data)],prevReplayState];
     case "CountdownBegin":
-      return [
+      return [[
         simple("game:pre_countdown_begin", data),
         simple("game:post_countdown_begin", data)
-      ];
+      ],prevReplayState];
     case "RoundStarted":
-      return [simple("game:round_started_go", data)];
+      return [[simple("game:round_started_go", data)],prevReplayState];
     case "UpdateState":
-      return [mapUpdateState(data as RlUpdateState)];
+        return mapUpdateState(data as RlUpdateState, prevReplayState);
     case "BallHit":
-      return [mapBallHit(data as RlBallHit)];
+      return [[mapBallHit(data as RlBallHit)],prevReplayState];
     case "ClockUpdatedSeconds":
-      return [mapClockUpdatedSeconds(data as RlClockUpdatedSeconds)];
+      return [[mapClockUpdatedSeconds(data as RlClockUpdatedSeconds)],prevReplayState];
     case "StatfeedEvent":
-      return [mapStatfeedEvent(data as RlStatfeedEvent)];
+      return [[mapStatfeedEvent(data as RlStatfeedEvent)],prevReplayState];
     case "GoalScored":
-      return [mapGoalScored(data as RlGoalScored)];
+      return [[mapGoalScored(data as RlGoalScored)],prevReplayState];
     case "GoalReplayStart":
     case "ReplayStart":
-      return [simple("game:replay_start", data)];
+      return [[simple("game:replay_start", data)],prevReplayState];
     case "GoalReplayWillEnd":
     case "ReplayWillEnd":
-      return [simple("game:replay_will_end", data)];
+      return [[simple("game:replay_will_end", data)],prevReplayState];
     case "GoalReplayEnd":
     case "ReplayEnd":
-      return [simple("game:replay_end", data)];
+      return [[simple("game:replay_end", data)],prevReplayState];
     case "MatchEnded":
-      return [mapMatchEnded(data as RlMatchEnded)];
+      return [[mapMatchEnded(data as RlMatchEnded)],prevReplayState];
     case "PodiumStart":
-      return [simple("game:podium_start", data)];
+      return [[simple("game:podium_start", data)],prevReplayState];
     case "MatchDestroyed":
-      return [simple("game:match_destroyed", data)];
+      return [[simple("game:match_destroyed", data)],prevReplayState];
     default:
-      return [simple(message.Event, data)];
+      return [[simple(message.Event, data)],prevReplayState];
   }
 }
 
@@ -83,17 +83,24 @@ function simple(event: string, data: unknown): SosMessage {
   return { event, data };
 }
 
-function mapUpdateState(data: RlUpdateState): SosMessage {
+function mapUpdateState(data: RlUpdateState, prevReplayState: boolean): [SosMessage[],boolean] {
   const players: Record<string, unknown> = {};
   const game = read(data, "Game", "game") || {};
   const rlPlayers = read(data, "Players", "players") || [];
+  const isReplay = Boolean(read(game, "bReplay", "isReplay"));
 
   for (const player of rlPlayers) {
     const id = makeSosPlayerId(player);
     players[id] = mapPlayer(player, id);
   }
+// TODO: Remove once Goal Replay Start/End events are working, this hijacks the update event where bReplay toggles states and spoofs returning the respective SOS event
+  if (isReplay !== prevReplayState){
+    return isReplay==true ? [[{data: "game_replay_start",event: "game:replay_start"}],isReplay] : [[{data:{match_guid: read(data, "MatchGuid", "match_guid")},event: "game:replay_end"}],isReplay];
+  }
 
-  return {
+//   prevReplayState = Boolean(read(game, "bReplay", "isReplay"));
+
+  return [[{
     event: "game:update_state",
     data: {
       event: "gamestate",
@@ -118,7 +125,7 @@ function mapUpdateState(data: RlUpdateState): SosMessage {
       match_guid: read(data, "MatchGuid", "match_guid"),
       players
     }
-  };
+  }],Boolean(read(game, "bReplay", "isReplay"))];
 }
 
 function mapPlayer(player: RlPlayer, id: string): unknown {

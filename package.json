@@ -1,6 +1,6 @@
 {
   "name": "bakkes-rl-converter",
-  "version": "1.0.3",
+  "version": "1.0.3-temp-replay-spoof",
   "description": "Rocket League Stats API to SOS/BakkesMod WebSocket converter.",
   "main": "dist/src/main/electronMain.js",
   "scripts": {
