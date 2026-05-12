@@ -47,12 +47,14 @@ export function mapRlEventToSosMessages(message: RlMessage): SosMessage[] {
       return [mapStatfeedEvent(data as RlStatfeedEvent)];
     case "GoalScored":
       return [mapGoalScored(data as RlGoalScored)];
+    case "ReplayPlaybackStart":
     case "GoalReplayStart":
     case "ReplayStart":
       return [simple("game:replay_start", data)];
     case "GoalReplayWillEnd":
     case "ReplayWillEnd":
       return [simple("game:replay_will_end", data)];
+    case "ReplayPlaybackEnd":
     case "GoalReplayEnd":
     case "ReplayEnd":
       return [simple("game:replay_end", data)];
